@@ -90,7 +90,8 @@ func authorizationIssueCaller(ctx echo.Context) error {
 	api := ctx.Get(AUTHLETE_API).(api.AuthleteApi)
 	authzIssueRes, authleteErr := api.AuthorizationIssue(&dto.AuthorizationIssueRequest{Ticket: authzSess.Values[TICKET].(string), Subject: authnSess.Values[USER_ID].(string)})
 	if authleteErr != nil {
-		return ctx.String(http.StatusBadRequest, authleteErr.Error())
+		ctx.Logger().Error(authleteErr.Error())
+		return echo.ErrInternalServerError
 	}
 
 	return ctx.Redirect(http.StatusFound, authzIssueRes.ResponseContent)
@@ -113,7 +114,8 @@ func authorizationFailCaller(ctx echo.Context, reason dto.AuthorizationFailReaso
 	api := ctx.Get(AUTHLETE_API).(api.AuthleteApi)
 	authzFailRes, authleteErr := api.AuthorizationFail(&dto.AuthorizationFailRequest{Ticket: ticket, Reason: reason})
 	if authleteErr != nil {
-		return ctx.String(http.StatusBadRequest, authleteErr.Error())
+		ctx.Logger().Error(authleteErr.Error())
+		return echo.ErrInternalServerError
 	}
 
 	switch authzFailRes.Action {
