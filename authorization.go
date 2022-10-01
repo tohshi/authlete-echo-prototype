@@ -5,17 +5,15 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/authlete/authlete-go/api"
 	"github.com/authlete/authlete-go/dto"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
 
 func authorizationHandler(ctx echo.Context) error {
-	api := ctx.Get(AUTHLETE_API).(api.AuthleteApi)
 	params := getParamsFromContext(ctx)
 
-	authzRes, authleteErr := api.Authorization(&dto.AuthorizationRequest{Parameters: params})
+	authzRes, authleteErr := authleteApi.Authorization(&dto.AuthorizationRequest{Parameters: params})
 	if authleteErr != nil {
 		ctx.Logger().Error(authleteErr.Error())
 		return echo.ErrInternalServerError
@@ -80,6 +78,13 @@ func authorizationIssueCaller(ctx echo.Context) error {
 		ctx.Logger().Error(err)
 		return err
 	}
+	ticket := authzSess.Values[TICKET].(string)
+
+	// Delete Authorization Session
+	authzSess.Options.MaxAge = -1
+	if err := authzSess.Save(ctx.Request(), ctx.Response()); err != nil {
+		ctx.Logger().Error(err)
+	}
 
 	authnSess, err := session.Get(AUTHENTICATION_SESSION, ctx)
 	if err != nil {
@@ -87,8 +92,7 @@ func authorizationIssueCaller(ctx echo.Context) error {
 		return err
 	}
 
-	api := ctx.Get(AUTHLETE_API).(api.AuthleteApi)
-	authzIssueRes, authleteErr := api.AuthorizationIssue(&dto.AuthorizationIssueRequest{Ticket: authzSess.Values[TICKET].(string), Subject: authnSess.Values[USER_ID].(string)})
+	authzIssueRes, authleteErr := authleteApi.AuthorizationIssue(&dto.AuthorizationIssueRequest{Ticket: ticket, Subject: authnSess.Values[USER_ID].(string)})
 	if authleteErr != nil {
 		ctx.Logger().Error(authleteErr.Error())
 		return echo.ErrInternalServerError
@@ -111,8 +115,7 @@ func authorizationFailCaller(ctx echo.Context, reason dto.AuthorizationFailReaso
 		ctx.Logger().Error(err)
 	}
 
-	api := ctx.Get(AUTHLETE_API).(api.AuthleteApi)
-	authzFailRes, authleteErr := api.AuthorizationFail(&dto.AuthorizationFailRequest{Ticket: ticket, Reason: reason})
+	authzFailRes, authleteErr := authleteApi.AuthorizationFail(&dto.AuthorizationFailRequest{Ticket: ticket, Reason: reason})
 	if authleteErr != nil {
 		ctx.Logger().Error(authleteErr.Error())
 		return echo.ErrInternalServerError

@@ -3,18 +3,15 @@ package main
 import (
 	"net/http"
 
-	"github.com/authlete/authlete-go/api"
 	"github.com/authlete/authlete-go/dto"
 	"github.com/labstack/echo/v4"
 )
 
 func tokenHandler(ctx echo.Context) error {
-	api := ctx.Get(AUTHLETE_API).(api.AuthleteApi)
-
 	username, password, _ := ctx.Request().BasicAuth()
 	params := getParamsFromContext(ctx)
 
-	tokenRes, authleteErr := api.Token(&dto.TokenRequest{Parameters: params, ClientId: username, ClientSecret: password})
+	tokenRes, authleteErr := authleteApi.Token(&dto.TokenRequest{Parameters: params, ClientId: username, ClientSecret: password})
 	if authleteErr != nil {
 		ctx.Logger().Error(authleteErr.Error())
 		return echo.ErrInternalServerError

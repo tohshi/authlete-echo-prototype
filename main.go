@@ -15,6 +15,8 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+var authleteApi api.AuthleteApi
+
 type Template struct {
 	templates *template.Template
 }
@@ -24,6 +26,8 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 }
 
 func init() {
+	conf := new(conf.AuthleteEnvConfiguration)
+	authleteApi = api.New(conf)
 }
 
 func main() {
@@ -38,10 +42,6 @@ func main() {
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))))
 	e.Use(middleware.Recover())
 
-	conf := conf.AuthleteEnvConfiguration{}
-	api := AuthleteApi{api.New(&conf)}
-	e.Use(api.authleteMiddleware)
-
 	e.Renderer = &Template{
 		templates: template.Must(template.ParseGlob("templates/*")),
 	}
@@ -50,9 +50,9 @@ func main() {
 		return ctx.String(http.StatusOK, "OK")
 	})
 
-	e.GET(AUTHORIZATION_ENDPOINT, authorizationHandler, api.authleteMiddleware)
+	e.GET(AUTHORIZATION_ENDPOINT, authorizationHandler)
 	e.POST(AUTHORIZATION_ENDPOINT, authorizationHandler)
-	e.POST(TOKEN_ENDPOINT, tokenHandler, api.authleteMiddleware)
+	e.POST(TOKEN_ENDPOINT, tokenHandler)
 	e.GET(LOGIN_ENDPOINT, loginPageHandler)
 	e.POST(LOGIN_ENDPOINT, loginAttemptHandler)
 	e.GET(CONSENT_ENDPOINT, consentPageHandler)

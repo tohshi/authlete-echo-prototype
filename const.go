@@ -24,7 +24,3 @@ const (
 	CLIENT_ID              = "client_id"
 	SCOPES                 = "scopes"
 )
-
-const (
-	AUTHLETE_API = "AuthleteApi"
-)
